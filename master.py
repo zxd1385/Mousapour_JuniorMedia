@@ -21,6 +21,7 @@ with sqlite3.connect('master.db') as connection:
         CREATE TABLE IF NOT EXISTS message_ids(
         id integer primary key AUTOINCREMENT,    
         message_ids text,
+        message_title text,
         message_subcategory_name integer
          );
         """
@@ -47,6 +48,7 @@ def Admin_Recognize(message):
 
 
 
+current_category = ""
 #callback handler
 @bot.callback_query_handler(func= lambda call:True)
 def callback_handler(call):
@@ -67,7 +69,23 @@ def callback_handler(call):
                        c_get = InlineKeyboardButton(text=f"{category[1]}", callback_data=f"{category[1]}")
                        categories_keyboard.row(c_get)
                 bot.reply_to(call.message,f"Your have your all categories her:",reply_markup=categories_keyboard)
-        
+        elif call.data == "c_add":
+                bot.send_message(call.message.chat.id , "Enter a title :")
+                bot.register_next_step_handler(call.message,get_user_category_title)
+        else:
+               global current_category
+               current_category = call.data
+               
+               c_add = InlineKeyboardButton(text="send content", callback_data="c_add")
+               c_see = InlineKeyboardButton(text="see contents", callback_data="c_see")
+               c_addorsee_keboard = InlineKeyboardMarkup()
+               c_addorsee_keboard.row(c_add,c_see)
+               bot.send_message(call.message.chat.id , f"Hw do you wanna handle the category {current_category}?",reply_markup=c_addorsee_keboard)
+               
+
+                
+
+               
                        
 
 
@@ -86,5 +104,30 @@ def get_user_category(message):
             category_register_tuple = (c_name ,0)
             cursor.execute(Create_NEW_category,category_register_tuple)
         bot.reply_to(message,f"New category {c_name} has been initialized succesfully1")
+
+title = ""
+def get_user_category_title(message):
+       global title
+       title = message.text
+       bot.reply_to(message,f"title : {title} ; Now send me your message for category : {current_category} ...")
+       bot.register_next_step_handler(message,get_user_category_message)
+
+
+def get_user_category_message(message):
+       msg_id = message.message_id
+       with sqlite3.connect('master.db') as connection:
+            cursor = connection.cursor()
+            Add_NEW_Content = """
+            INSERT INTO message_ids (message_ids,message_title,message_subcategory_name)
+            VALUES (?,?,?)
+            """
+            content_register_tuple = (msg_id , title , current_category)
+            cursor.execute(Add_NEW_Content,content_register_tuple)
+       bot.reply_to(message,f"This message has been saved succesfully for next searchs!")
+
+
+
+
+       
 
 bot.polling()
