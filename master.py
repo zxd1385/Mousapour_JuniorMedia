@@ -24,7 +24,7 @@ with sqlite3.connect('master.db') as connection:
         message_subcategory_name integer
          );
         """
-        cursor.execute(Create_Table_categories)
+        cursor.execute(Create_Table_message_ids)
 
 
 #main_keyword
@@ -53,6 +53,22 @@ def callback_handler(call):
         if call.data == "m_init" :
                 bot.send_message(call.message.chat.id , "OK!...Now, Enter your category_name: ")
                 bot.register_next_step_handler(call.message,get_user_category)
+        elif call.data == "m_get" :
+                categories_list =[]
+                with sqlite3.connect('master.db') as connection:
+                    cursor = connection.cursor()
+                    Get_Current_categories = """
+                    SELECT * FROM categories
+                    """
+                    cursor.execute(Get_Current_categories)
+                    categories_list = cursor.fetchall()
+                categories_keyboard = InlineKeyboardMarkup()
+                for category in categories_list:
+                       c_get = InlineKeyboardButton(text=f"{category[1]}", callback_data=f"{category[1]}")
+                       categories_keyboard.row(c_get)
+                bot.reply_to(call.message,f"Your have your all categories her:",reply_markup=categories_keyboard)
+        
+                       
 
 
 
