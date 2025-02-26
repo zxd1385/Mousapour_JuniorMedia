@@ -72,8 +72,24 @@ def callback_handler(call):
         elif call.data == "c_add":
                 bot.send_message(call.message.chat.id , "Enter a title :")
                 bot.register_next_step_handler(call.message,get_user_category_title)
+        elif call.data == "c_see":
+                
+                messages_list = []
+                global current_category
+                with sqlite3.connect('master.db') as connection:
+                    cursor = connection.cursor()
+                    Get_Current_categories_messages = """
+                    SELECT * FROM message_ids 
+                    """
+                    cursor.execute(Get_Current_categories_messages)
+                    messages_list = cursor.fetchall()
+                for msg in messages_list:
+                    if msg[3] == current_category:
+                        message_link = f"https://t.me/Junior_mediaBOT/{msg[1]}"
+                        bot.send_message(call.message.chat.id , f"{msg[2]}",  reply_to_message_id=msg[1])
+                    
         else:
-               global current_category
+               
                current_category = call.data
                
                c_add = InlineKeyboardButton(text="send content", callback_data="c_add")
