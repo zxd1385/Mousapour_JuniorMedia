@@ -55,11 +55,13 @@ def Admin_Recognize(message):
 
 
 current_category = ""
+current_commit = ""
 
 #callback handler
 @bot.callback_query_handler(func= lambda call:True)
 def callback_handler(call):
         global current_category
+        global current_commit
         global bot_perivious_msg
         if call.data == "m_init" :
                 bot.delete_message(chat_id= call.message.chat.id,message_id=bot_perivious_msg)
@@ -129,6 +131,18 @@ def callback_handler(call):
                 bot.delete_message(chat_id= call.message.chat.id,message_id=bot_perivious_msg)
                 bot.send_message(call.message.chat.id,f"are you sure you are realy going to delete {current_category} from memory? your sent messages dose not delete bot their addreses will be terminated! YES/NO ")
                 bot.register_next_step_handler(call.message,deletCat)
+        elif  "commit_delet" in call.data.strip():
+                
+                current_commit=call.data[12:]
+                print(call.data)
+                bot.send_message(call.message.chat.id,f"are you sure you are realy going to delete {current_commit} from memory? your sent messages dose not delete bot their addreses will be terminated! YES/NO ")
+                bot.register_next_step_handler(call.message,deletComm)
+
+                
+        elif call.data == "c_update":
+                bot.delete_message(chat_id= call.message.chat.id,message_id=bot_perivious_msg)
+                bot.send_message(call.message.chat.id,f"Enter new title for {current_category}")
+                bot.register_next_step_handler(call.message,updatecat)
 
                 bot_perivious_msg = bot_perivious_msg + 1
 
@@ -145,7 +159,12 @@ def callback_handler(call):
                     messages_list = cursor.fetchall()
                 for msg in messages_list:
                     if msg[3] == current_category:
-                        bot.send_message(call.message.chat.id , f"{msg[2]}",  reply_to_message_id=msg[1])
+                        print(f"commit_delet{msg[2]}")
+                        commit_delete = InlineKeyboardButton(text=f"Delete {msg[2]}", callback_data=f"commit_delet{msg[2]}")
+                        commit_update = InlineKeyboardButton(text=f"Update {msg[2]}", callback_data=f"commit_update{msg[2]}")
+                        commit_keyboard =  InlineKeyboardMarkup()
+                        commit_keyboard.row(commit_delete,commit_update)
+                        bot.send_message(call.message.chat.id , f"{msg[2]}",  reply_to_message_id=msg[1] , reply_markup=commit_keyboard)
                     
         else:
                
@@ -155,9 +174,11 @@ def callback_handler(call):
                c_see = InlineKeyboardButton(text="see contents", callback_data="c_see")
                c_search = InlineKeyboardButton(text="search for?", callback_data="c_search")
                c_delete = InlineKeyboardButton(text=f"Delete {current_category}", callback_data="c_delete")
+               c_update = InlineKeyboardButton(text=f"Update {current_category} title", callback_data="c_update")
                c_addorsee_keboard = InlineKeyboardMarkup()
                c_addorsee_keboard.row(c_add,c_see)
                c_addorsee_keboard.row(c_search)
+               c_addorsee_keboard.row(c_update)
                c_addorsee_keboard.row(c_delete)
                bot.send_message(call.message.chat.id , f"Hw do you wanna handle the category {current_category}?",reply_markup=c_addorsee_keboard)
                bot_perivious_msg = call.message.message_id + 1
@@ -279,6 +300,46 @@ def deletCat(message):
                 cursor.execute("DELETE FROM message_ids WHERE message_subcategory_name = ?", (current_category,))
                 cursor.execute("DELETE FROM categories WHERE c_name  = ?", (current_category,))
               bot.reply_to(message,f"The category {current_category} has been deleted succesfully!")
+       else:
+           bot.reply_to(message,f"{message.text} is unknown command!!!!")   
+def deletComm(message):
+       if message.text == "NO":
+              bot.send_message(message.chat.id , f"termination {current_commit} canceled!")
+       elif message.text == "YES":
+              with sqlite3.connect('master.db') as connection:
+                cursor = connection.cursor()
+                cursor.execute("DELETE FROM message_ids WHERE message_title = ?", (current_commit,))
+
+                
+                Get_Current_categories_counter = """
+                         SELECT * FROM categories 
+                        """
+                cursor.execute(Get_Current_categories_counter)
+                category_list = cursor.fetchall()
+                for ctg in category_list:
+                        if ctg[1] == current_category:
+                                current_category_counter = ctg[2]
+                      
+                cursor.execute("""
+                  UPDATE categories
+                   SET c_counter = ?
+                   WHERE c_name = ?;
+                   """, (current_category_counter - 1, current_category))
+
+              bot.reply_to(message,f"The commit {current_commit} has been deleted succesfully!")
+       else:
+           bot.reply_to(message,f"{message.text} is unknown command!!!!")   
+
+def updatecat(message):
+       with sqlite3.connect('master.db') as connection:
+                cursor = connection.cursor()
+                cursor.execute("""
+                  UPDATE categories
+                   SET c_name = ?
+                   WHERE c_name = ?;
+                   """, (message.text, current_category))
+       bot.reply_to(message,f"{current_category} changed into {message.text} succesfully!")  
+       
               
 
 
