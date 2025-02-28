@@ -125,6 +125,12 @@ def callback_handler(call):
                 bot.register_next_step_handler(call.message,externalsearchfor)
 
                 bot_perivious_msg = bot_perivious_msg + 1
+        elif call.data == "c_delete":
+                bot.delete_message(chat_id= call.message.chat.id,message_id=bot_perivious_msg)
+                bot.send_message(call.message.chat.id,f"are you sure you are realy going to delete {current_category} from memory? your sent messages dose not delete bot their addreses will be terminated! YES/NO ")
+                bot.register_next_step_handler(call.message,deletCat)
+
+                bot_perivious_msg = bot_perivious_msg + 1
 
         elif call.data == "c_see":
                 bot.delete_message(chat_id= call.message.chat.id,message_id=bot_perivious_msg)
@@ -148,9 +154,11 @@ def callback_handler(call):
                c_add = InlineKeyboardButton(text="send content", callback_data="c_add")
                c_see = InlineKeyboardButton(text="see contents", callback_data="c_see")
                c_search = InlineKeyboardButton(text="search for?", callback_data="c_search")
+               c_delete = InlineKeyboardButton(text=f"Delete {current_category}", callback_data="c_delete")
                c_addorsee_keboard = InlineKeyboardMarkup()
                c_addorsee_keboard.row(c_add,c_see)
                c_addorsee_keboard.row(c_search)
+               c_addorsee_keboard.row(c_delete)
                bot.send_message(call.message.chat.id , f"Hw do you wanna handle the category {current_category}?",reply_markup=c_addorsee_keboard)
                bot_perivious_msg = call.message.message_id + 1
 
@@ -261,6 +269,17 @@ def externalsearchfor(message):
                bot.send_message(message.chat.id , f"{co} commits founded with key: {s_key}.")
         else:
                bot.send_message(message.chat.id , f"NO commits founded with key: {s_key}!!!")
+
+def deletCat(message):
+       if message.text == "NO":
+              bot.send_message(message.chat.id , f"termination {current_category} canceled!")
+       elif message.text == "YES":
+              with sqlite3.connect('master.db') as connection:
+                cursor = connection.cursor()
+                cursor.execute("DELETE FROM message_ids WHERE message_subcategory_name = ?", (current_category,))
+                cursor.execute("DELETE FROM categories WHERE c_name  = ?", (current_category,))
+              bot.reply_to(message,f"The category {current_category} has been deleted succesfully!")
+              
 
 
 
