@@ -137,6 +137,12 @@ def callback_handler(call):
                 print(call.data)
                 bot.send_message(call.message.chat.id,f"are you sure you are realy going to delete {current_commit} from memory? your sent messages dose not delete bot their addreses will be terminated! YES/NO ")
                 bot.register_next_step_handler(call.message,deletComm)
+        elif  "commit_update" in call.data.strip():
+                
+                current_commit=call.data[13:]
+                print(call.data)
+                bot.send_message(call.message.chat.id,f"enter your new title for {current_commit} to change:")
+                bot.register_next_step_handler(call.message,updateComm)
 
                 
         elif call.data == "c_update":
@@ -339,6 +345,15 @@ def updatecat(message):
                    WHERE c_name = ?;
                    """, (message.text, current_category))
        bot.reply_to(message,f"{current_category} changed into {message.text} succesfully!")  
+def updateComm(message):
+       with sqlite3.connect('master.db') as connection:
+                cursor = connection.cursor()
+                cursor.execute("""
+                  UPDATE message_ids
+                   SET message_title = ?
+                   WHERE message_title = ?;
+                   """, (message.text, current_commit))
+       bot.reply_to(message,f"{current_commit} changed into {message.text} succesfully!")  
        
               
 
