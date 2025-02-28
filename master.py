@@ -104,7 +104,9 @@ def callback_handler(call):
                 for category in categories_list:
                        c_get = InlineKeyboardButton(text=f"{category[1]} 🔑{category[2]}", callback_data=f"{category[1]}")
                        categories_keyboard.row(c_get)
-                bot.send_message(call.message.chat.id,f"Your have your all categories her:",reply_markup=categories_keyboard)
+                E_S = InlineKeyboardButton(text=f"External search for?", callback_data="E_s")
+                categories_keyboard.row(E_S)
+                bot.send_message(call.message.chat.id,f"You have your all categories her:",reply_markup=categories_keyboard)
                 bot_perivious_msg = bot_perivious_msg + 1
         elif call.data == "c_add":
                 bot.delete_message(chat_id= call.message.chat.id,message_id=bot_perivious_msg)
@@ -115,6 +117,12 @@ def callback_handler(call):
                 bot.delete_message(chat_id= call.message.chat.id,message_id=bot_perivious_msg)
                 bot.send_message(call.message.chat.id,f"enter a Keyword to search for on commits into {current_category}")
                 bot.register_next_step_handler(call.message,searchforcurrentcategory)
+
+                bot_perivious_msg = bot_perivious_msg + 1
+        elif call.data == "E_s":
+                bot.delete_message(chat_id= call.message.chat.id,message_id=bot_perivious_msg)
+                bot.send_message(call.message.chat.id,f"enter a Keyword to search for on all commits")
+                bot.register_next_step_handler(call.message,externalsearchfor)
 
                 bot_perivious_msg = bot_perivious_msg + 1
 
@@ -227,6 +235,25 @@ def searchforcurrentcategory(message):
                 messages_list = cursor.fetchall()
         for msg in messages_list:
                 if msg[3] == current_category and s_key in msg[2]:
+                        co += 1
+                        bot.send_message(message.chat.id , f"{msg[2]}",  reply_to_message_id=msg[1])
+
+        if co > 0:
+               bot.send_message(message.chat.id , f"{co} commits founded with key: {s_key}.")
+        else:
+               bot.send_message(message.chat.id , f"NO commits founded with key: {s_key}!!!")
+def externalsearchfor(message):
+        s_key = message.text
+        co = 0
+        with sqlite3.connect('master.db') as connection:
+                cursor = connection.cursor()
+                Get_Current_categories_messages = """
+                SELECT * FROM message_ids 
+                """
+                cursor.execute(Get_Current_categories_messages)
+                messages_list = cursor.fetchall()
+        for msg in messages_list:
+                if s_key in msg[2]:
                         co += 1
                         bot.send_message(message.chat.id , f"{msg[2]}",  reply_to_message_id=msg[1])
 
